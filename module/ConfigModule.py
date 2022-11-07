@@ -31,7 +31,7 @@ class ManualArgs:
         parser = argparse.ArgumentParser(
             parents=[parent_parser], add_help=False)
         parser.add_argument('--model_type', type=str, default='bart',
-                            choices=['pegasus', 'reformer', 'longformer', 'bart'])
+                            choices=['pegasus', 'reformer', 'longformer', 'bart', 'longt5'])
         parser.add_argument('--ckpt_freq', type=int, nargs='+', default=[500, 2000, 5000],
                             help='어떤 step에서 저장할지')
         parser.add_argument('--batch_size', type=int, default=16)
@@ -45,8 +45,12 @@ class ManualArgs:
         parser.add_argument('--strategy', type=str, default=None, choices=["ddp", "ddp_spawn", "deepspeed"],
                             help='https://pytorch-lightning.readthedocs.io/en/stable/extensions/strategy.html')
         parser.add_argument('--precision', type=int, default=32, choices=[16, 32], help='fp setting')
-        parser.add_argument('--plugins', type=str, default=None, choices=[None, 'deepspeed_stage_2', 'deepspeed_stage_2_offload', 
-                                                                          'deepspeed_stage_3', 'deepspeed_stage_3_offload'], help='plugin setting : default=None')
+        parser.add_argument('--plugins', type=str, default=None, choices=[None,
+                                                                          'deepspeed_stage_2',
+                                                                          'deepspeed_stage_2_offload',
+                                                                          'deepspeed_stage_3',
+                                                                          'deepspeed_stage_3_offload'],
+                            help='plugin setting : default=None')
         parser.add_argument('--optimizer', type=str, default='AdamW', choices=['AdamW', 'FusedAdam', 'DeepSpeedCPUAdam'])
         parser.add_argument('--use_cache', action='store_true', default=False, help='true면 캐싱된 데이터 사용')
 

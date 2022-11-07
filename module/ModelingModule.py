@@ -17,7 +17,8 @@ from transformers import (MBartForConditionalGeneration,
                           AutoConfig,
                           AutoTokenizer,
                           AutoModelForSeq2SeqLM,
-                          AutoModelForCausalLM)
+                          AutoModelForCausalLM,
+                          LongformerForQuestionAnswering)
 
 from utils.training_utils import get_logger
 
@@ -42,14 +43,17 @@ def return_model(args: SimpleNamespace):
     pdict = {'pegasus': 'google/pegasus-xsum',
              'reformer': 'google/reformer-crime-and-punishment',
              'longformer': 'allenai/longformer-base-4096',
-             'bart': 'facebook/bart-large-cnn'}
+             'bart': 'facebook/bart-large-cnn',
+             'longt5': 'Stancld/longt5-tglobal-large-16384-pubmed-3k_steps'}
 
     assert args.model_type in pdict  # 'Model type defining error'
     model_type = pdict[args.model_type]
     tokenizer = AutoTokenizer.from_pretrained(model_type)
 
     model_function = AutoModelForSeq2SeqLM
-    if args.model_type in ['gpt2']:
+    if args.model_type in ['longformer']:
+        model_function = LongformerForQuestionAnswering
+    elif args.model_type in ['gpt2']:
         model_function = AutoModelForCausalLM
 
     if args.precision == 16:

@@ -115,10 +115,14 @@ class GenerationModule:
         '''
         inputs = self.preprocessing(inputs, processing)
 
+        if not self.enc_dec:
+            max_length = self.max_len * 2
+        else:
+            max_length = self.max_len
         if self.beam > 1:
             outs = self.model.generate(inputs,
                                        num_beams= self.beam,
-                                       max_length=self.max_len * 2,
+                                       max_length=max_length,
                                        early_stopping=True,
                                        length_penalty=self.length_penalty,
                                        repetition_penalty=self.repetition_penalty,
@@ -127,7 +131,7 @@ class GenerationModule:
         else:
             outs = self.model.generate(inputs,
                                        do_sample=True,
-                                       max_length=self.max_len * 2,
+                                       max_length=max_length,
                                        top_p=self.top_p,
                                        top_k=self.top_k,
                                        temperature=self.temperature,

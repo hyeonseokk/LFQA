@@ -19,7 +19,8 @@ from transformers import (MBartForConditionalGeneration,
                           AutoModelForSeq2SeqLM,
                           AutoModelForCausalLM,
                           LongformerForQuestionAnswering,
-                          ReformerModelWithLMHead)
+                          ReformerModelWithLMHead,
+                          ReformerTokenizer)
 
 from utils.training_utils import get_logger
 
@@ -42,20 +43,33 @@ def return_sp(sp_path):
 
 def return_model(args: SimpleNamespace):
     pdict = {'pegasus': 'google/pegasus-xsum',
-             'reformer': 'google/reformer-crime-and-punishment',
+             'reformer2': 'google/reformer-crime-and-punishment',
+             'reformer': "google/reformer-enwik8",
              'bart': 'facebook/bart-large-cnn',
-             'longt5': 'Stancld/longt5-tglobal-large-16384-pubmed-3k_steps'}
+             'longt52': 'Stancld/longt5-tglobal-large-16384-pubmed-3k_steps',
+             'longt53': 'pszemraj/long-t5-tglobal-base-16384-book-summary',
+             'longt5': 'google/long-t5-tglobal-base'}
 
     assert args.model_type in pdict  # 'Model type defining error'
     model_type = pdict[args.model_type]
     tokenizer = AutoTokenizer.from_pretrained(model_type)
 
-    if args.model_type == 'reformer':
-        model_function = ReformerModelWithLMHead
-    elif 'gpt2' in args.model_type:
+    # 일반적인 상황
+    if 'reformer' in args.model_type:
         model_function = AutoModelForCausalLM
     else:
         model_function = AutoModelForSeq2SeqLM
+
+    # 각 케이스별 특수상황
+    if args.model_type == 'reformer':
+        model_function = ReformerModelWithLMHead
+        tokenizer = ReformerTokenizer.from_pretrained(model_type)
+        tokenizer.bos_token = tokenizer.eos_token
+        tokenizer.pad_token = tokenizer.eos_token
+
+    elif args.model_type == 'longt5':
+        tokenizer.bos_token = tokenizer.pad_token
+
 
     if args.precision == 16:
         core_model = model_function.from_pretrained(model_type, torch_dtype=torch.float16)

@@ -136,7 +136,8 @@ class TorchFileModule(FileModule):
                 if minval < score:
                     for fn in bleu_dict:
                         if bleu_dict[fn] == minval:
-                            os.remove(os.path.join(plself.ckpt_dir, fn))
+                            if os.path.exists(os.path.join(plself.ckpt_dir, fn)):
+                                os.remove(os.path.join(plself.ckpt_dir, fn))
                             break
                     self.save_one(plself, loss, score, filename=iteration_name)
             else:  # minimize
@@ -144,7 +145,8 @@ class TorchFileModule(FileModule):
                 if maxval > score:
                     for fn in bleu_dict:
                         if bleu_dict[fn] == maxval:
-                            os.remove(os.path.join(plself.ckpt_dir, fn))
+                            if os.path.exists(os.path.join(plself.ckpt_dir, fn)):
+                                os.remove(os.path.join(plself.ckpt_dir, fn))
                             break
                     self.save_one(plself, loss, score, filename=iteration_name)
 
@@ -158,7 +160,8 @@ class TorchFileModule(FileModule):
         if best_bleu is not None:
             best_bleu_score = float(best_bleu.split('_')[1].split('=')[1])
             if best_bleu_score < score:
-                os.remove(os.path.join(plself.ckpt_dir, best_bleu))
+                if os.path.exists(os.path.join(plself.ckpt_dir, best_bleu)):
+                    os.remove(os.path.join(plself.ckpt_dir, best_bleu))
                 self.save_one(plself, loss, score, filename=best_name)
         else:
             self.save_one(plself, loss, score, filename=best_name)

@@ -48,7 +48,7 @@ class LFQADataset(Dataset):
             self.len = len(self.docs)
 
     def _declare(self):
-        if self.args.model_type in ['gpt2']:
+        if self.args.model_type in ['reformer']:
             self.enc_dec = False
         else:
             self.enc_dec = True

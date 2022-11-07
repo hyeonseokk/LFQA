@@ -43,7 +43,7 @@ class ManualArgs:
         parser.add_argument('--num_node', type=int, default=1, help='node 개수')
         parser.add_argument('--accelerator', type=str, default=None, choices=["gpu", "ddp"], help='gpu auto tpu ipu 등등')
         parser.add_argument('--strategy', type=str, default=None, choices=["ddp", "ddp_spawn", "deepspeed"],
-                            help='https://pytorch-lightning.readthedocs.io/en/stable/extensions/strategy.html')
+                            help='https://pytorch-lightning.readthe docs.io/en/stable/extensions/strategy.html')
         parser.add_argument('--precision', type=int, default=32, choices=[16, 32], help='fp setting')
         parser.add_argument('--plugins', type=str, default=None, choices=[None,
                                                                           'deepspeed_stage_2',

@@ -87,7 +87,7 @@ class PlModelModule(Base):
     def __init__(self, tokenizer, model, hparams, **kwargs):
         super(PlModelModule, self).__init__(hparams, **kwargs)
 
-        if 'gpt' in hparams.model_type:
+        if 'reformer' in hparams.model_type:
             self.enc_dec = False
             self.valid_maxlen = self.max_len * 2
         else:  # 아마 다 이쪽일것임

@@ -20,7 +20,9 @@ from transformers import (MBartForConditionalGeneration,
                           AutoModelForCausalLM,
                           LongformerForQuestionAnswering,
                           ReformerModelWithLMHead,
-                          ReformerTokenizer)
+                          ReformerTokenizer,
+                          PegasusTokenizer,
+                          PegasusForConditionalGeneration)
 
 from utils.training_utils import get_logger
 
@@ -70,6 +72,10 @@ def return_model(args: SimpleNamespace):
     elif args.model_type == 'longt5':
         tokenizer.bos_token = tokenizer.pad_token
 
+    elif args.model_type == 'pegasus':
+        model_function = PegasusForConditionalGeneration
+        tokenizer = PegasusTokenizer.from_pretrained(model_type)
+        tokenizer.bos_token = tokenizer.pad_token
 
     if args.precision == 16:
         core_model = model_function.from_pretrained(model_type, torch_dtype=torch.float16)

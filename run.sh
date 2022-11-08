@@ -13,14 +13,14 @@ CUDA_VISIBLE_DEVICES=3,4,6,7 nohup python train.py \
 
 
 # longt5돌리는 것
-CUDA_VISIBLE_DEVICES=2,7 nohup python train.py \
+CUDA_VISIBLE_DEVICES=0,1,2,3 nohup python train.py \
 --save_filename /home/mnt/hyeon/2.checkpoints/LFQA/gen_model/psg_top10/longt5 \
 --lr 1e-05 \
---gpus 2 \
+--gpus 4 \
 --accelerator ddp \
 --batch_size 2 \
 --precision 32 \
---max_len 1024 \
---num_node 8 \
+--max_len 1536 \
+--num_node 16 \
 --plugins deepspeed_stage_2 \
 --model_type longt5 > logs/psg_top10-longt5.log &

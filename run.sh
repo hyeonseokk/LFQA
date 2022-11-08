@@ -18,9 +18,9 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 nohup python train.py \
 --lr 1e-05 \
 --gpus 4 \
 --accelerator ddp \
---batch_size 2 \
+--batch_size 4 \
 --precision 32 \
---max_len 1536 \
---num_node 16 \
+--max_len 1024 \
+--num_node 8 \
 --plugins deepspeed_stage_2 \
 --model_type longt5 > logs/psg_top10-longt5.log &

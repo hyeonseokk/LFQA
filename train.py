@@ -23,7 +23,7 @@ def train(parser):
 
     args.gradient_clip_val = 1.0
     args.default_root_dir = 'logs'
-    args.gpus = 1
+    # args.gpus = 1
 
     print_args(args.__dict__, 'logging')
 
@@ -56,7 +56,7 @@ def train(parser):
     #                           offload_optimizer=True,
     #                           offload_parameters=True,
     #                           cpu_offload=True)
-    args.gpus = 4
+    # args.gpus = 4
     trainer = pl.Trainer.from_argparse_args(args,
                                             logger=tb_logger, callbacks=[lr_logger],
                                             accumulate_grad_batches=args.accumulate_grad,

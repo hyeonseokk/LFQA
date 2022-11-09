@@ -44,7 +44,7 @@ def inference(parser):
     if inference_arg.mode is not None:
         mappings = {'phr_phr_bart': {'ckpt': pjoin(CKPTPATH, "phr_top200/bart"),
                                      'file': pjoin(FILEPATH, "dev_preprocessed_1507_top200_phrase-top200.json")},
-                    'phr_psg_bart': {'ckpt': pjoin(CKPTPATH, "psg_top200/bart"),
+                    'phr_psg_bart': {'ckpt': pjoin(CKPTPATH, "psg_top10/bart"),
                                      'file': pjoin(FILEPATH, "dev_preprocessed_1507_top200_psg-top100.json")},
                     'sent_bart': {'ckpt': pjoin(CKPTPATH, "sent_top200/bart"),
                                   'file': pjoin(FILEPATH, "dev_preprocessed_1507_top200_sent-top200.json")}}
@@ -76,15 +76,21 @@ def inference(parser):
 
     os.makedirs('results', exist_ok=True)
 
-    for idx, instance in enumerate(dl):
-        # logger.info('instance')
-        # logger.info(instance['src_ids'].shape)
-        logger.info(f'{str(idx+1)} out of {str(tot_len)}')
-        out, ref = genmodule.generate(instance)
-        outs.extend(out)
-        refs.extend(ref)
-    output = [{'out': o, 'ref': r} for o, r in zip(outs, refs)]
-    fileutils.writelines(output, pjoin('results', inference_arg.testfile.split('/')[-1].replace('.json', '_results.jsonl')))
+    with torch.no_grad():
+        for idx, instance in enumerate(dl):
+            # logger.info('instance')
+            # logger.info(instance['src_ids'].shape)
+            logger.info(f'{str(idx+1)} out of {str(tot_len)}')
+            out, ref = genmodule.generate(instance)
+            outs.extend(out)
+            refs.extend(ref)
+
+    # output = {str(i): {"out": o, "ref": r} for i, (o, r) in enumerate(zip(outs, refs))}
+    output = [(o.replace('\n', ' '), r.replace('\n', ' ')) for o, r in zip(outs, refs)]
+    output = pd.DataFrame(output)
+    output.columns = ['outs', 'refs']
+    output.to_csv(pjoin('results', inference_arg.testfile.split('/')[-1].replace(".jsonl", "_results.csv")))
+    # fileutils.writelines(output, pjoin('results', inference_arg.testfile.split('/')[-1].replace(".json", "_results.json")))
 
 
 if __name__ == '__main__':

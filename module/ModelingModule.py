@@ -54,6 +54,19 @@ def return_model(args: SimpleNamespace):
 
     assert args.model_type in pdict  # 'Model type defining error'
     model_type = pdict[args.model_type]
+    # 일반적인 상황
+    if 'reformer' in args.model_type:
+        model_function = AutoModelForCausalLM
+    else:
+        model_function = AutoModelForSeq2SeqLM
+
+    # 각 케이스별 특수상황
+    if args.model_type == 'reformer':
+        model_function = ReformerModelWithLMHead
+        tokenizer = ReformerTokenizer.from_pretrained(model_type)
+        tokenizer.bos_token = tokenizer.eos_token
+        tokenizer.pad_token = tokenizer.eos_token
+
     tokenizer = AutoTokenizer.from_pretrained(model_type)
 
     # 일반적인 상황

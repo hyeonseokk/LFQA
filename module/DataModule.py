@@ -21,7 +21,6 @@ from utils.file_utils import TorchFileModule
 from utils.training_utils import get_logger
 from module.ModelingModule import replace_unicode_punct
 
-logger = get_logger()
 
 class LFQADataset(Dataset):
     '''
@@ -43,8 +42,7 @@ class LFQADataset(Dataset):
             if self.cache_filename not in os.listdir(self.args.cache_dir):
                 self._caching()
             self._read_cache()
-        else:  # 캐싱하지 않고 get_item에서 입력 구성하는 경우
-            self.docs = self.fileutils.reads(filename)  # json 쓸것
+            self.docs = self.fileutils.reads(filename)[:30]  # json 쓸것
             self.len = len(self.docs)
 
     def _declare(self):
@@ -99,6 +97,7 @@ class LFQADataset(Dataset):
         # padding하기 이전, input, label을 정의해주기 -> eos, bos같은것 다 붙인 상태로
         input_ids = [self.bos_index] + self.tokenizer.encode(replace_unicode_punct(instance['question'])) + \
                     [self.eos_index]
+        # logger = get_logger()
         # logger.info('instance:')
         # logger.info(instance)
         # logger.info('ctxs:')

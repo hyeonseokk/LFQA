@@ -42,6 +42,7 @@ class LFQADataset(Dataset):
             if self.cache_filename not in os.listdir(self.args.cache_dir):
                 self._caching()
             self._read_cache()
+        else:
             self.docs = self.fileutils.reads(filename)[:30]  # json 쓸것
             self.len = len(self.docs)
 

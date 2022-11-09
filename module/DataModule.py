@@ -21,8 +21,9 @@ from utils.file_utils import TorchFileModule
 from utils.training_utils import get_logger
 from module.ModelingModule import replace_unicode_punct
 
+logger = get_logger()
 
-class LFQADataset(Dataset):
+class SajuDataset(Dataset):
     '''
     spm_train --input=all.txt --model_prefix=a --vocab_size=50000 --model_type=unigram --pad_id 1 --bos_id 0 --unk_id 3 --eos_id 2
     args는 training에 넣어주는 args가 들어올 것임
@@ -42,18 +43,23 @@ class LFQADataset(Dataset):
             if self.cache_filename not in os.listdir(self.args.cache_dir):
                 self._caching()
             self._read_cache()
-        else:
-            self.docs = self.fileutils.reads(filename)[:30]  # json 쓸것
+        else:  # 캐싱하지 않고 get_item에서 입력 구성하는 경우
+            self.docs = self.fileutils.reads(filename)  # 여기서는 csv쓸것
             self.len = len(self.docs)
 
     def _declare(self):
-        if self.args.model_type in ['reformer']:
+        if 'gpt' in self.args.model_type:
             self.enc_dec = False
         else:
             self.enc_dec = True
         self.max_len = self.args.max_len
+        self.input_type = self.args.input_type
         self.cache_filename = self.filename.split('/')[-1] + '.cache'
         self.use_cache = self.args.use_cache
+
+        self.aux = False
+        if self.args.training_type == 'type2':
+            self.aux = True
 
         self.pad_index = self.tokenizer.pad_token_id
         self.eos_index = self.tokenizer.eos_token_id
@@ -63,7 +69,7 @@ class LFQADataset(Dataset):
     def _caching(self):
         docs = self.fileutils.reads(self.filename)  # 여기서는 csv쓸것
         self.len = len(docs)
-        sample = list(self.get_from_doc(docs[0]).keys())  # output이 뭘 담아야 하는지 적혀있음
+        sample = list(self.get_from_doc(docs.iloc[0]).keys())  # output이 뭘 담아야 하는지 적혀있음
 
         os.makedirs(pjoin(self.args.cache_dir, self.cache_filename), exist_ok=True)
         cached_docs = {key: np.memmap(pjoin(self.args.cache_dir, self.cache_filename, key + '.npy'),
@@ -71,14 +77,14 @@ class LFQADataset(Dataset):
                        for key in sample}
 
         for idx in tqdm(range(len(docs)), desc='now data caching ...'):
-            processed = self.get_from_doc(docs[idx])
+            processed = self.get_from_doc(docs.iloc[idx])
             for key in processed:
                 cached_docs[key][idx, :] = processed[key]
 
     def _read_cache(self):
         docs = self.fileutils.reads(self.filename)  # 여기서는 csv쓸것
         self.len = len(docs)
-        sample = list(self.get_from_doc(docs[0]).keys())  # output이 뭘 담아야 하는지 적혀있음
+        sample = list(self.get_from_doc(docs.iloc[0]).keys())  # output이 뭘 담아야 하는지 적혀있음
 
         self.docs = {key: np.memmap(pjoin(self.args.cache_dir, self.cache_filename, key + '.npy'),
                                     mode='r+', dtype=np.int_, shape=(self.len, self.max_len))
@@ -96,28 +102,30 @@ class LFQADataset(Dataset):
     
     def prepare_input(self, instance):
         # padding하기 이전, input, label을 정의해주기 -> eos, bos같은것 다 붙인 상태로
-        input_ids = [self.bos_index] + self.tokenizer.encode(replace_unicode_punct(instance['question'])) + \
-                    [self.eos_index]
-        # logger = get_logger()
-        # logger.info('instance:')
-        # logger.info(instance)
-        # logger.info('ctxs:')
-        # logger.info(instance['ctxs'])
-        ctxs = list(map(lambda x: x['title'] + ' ' + x['text'].replace('\n', ' '), instance['ctxs']))
-        for ctx in ctxs:
-            input_ids = input_ids + self.tokenizer.encode(replace_unicode_punct(ctx)) + [self.eos_index]
-            if len(input_ids) > self.max_len:
-                break
+        temp = {'categoty1': self.tokenizer.encode(replace_unicode_punct(instance['input_category1'])),
+                'categoty2': self.tokenizer.encode(replace_unicode_punct(instance['input_category2'])),
+                'categoty3': self.tokenizer.encode(replace_unicode_punct(instance['input_category3'])),
+                'noun': self.tokenizer.encode(replace_unicode_punct(instance['input_noun']))}
+        if self.aux:
+            temp.update({'aux': self.tokenizer.encode(replace_unicode_punct(instance['input_aux']))})
+
+        input_ids = [self.bos_index]
+        if 'c1' in self.input_type:
+            input_ids = input_ids + temp['categoty1'] + [self.eos_index]
+        if 'c2' in self.input_type:
+            input_ids = input_ids + temp['categoty2'] + [self.eos_index]
+        if 'c3' in self.input_type:
+            input_ids = input_ids + temp['categoty3'] + [self.eos_index]
+        input_ids = input_ids + temp['noun'] + [self.eos_index]
+
+        if self.aux:
+            input_ids = input_ids + temp['aux'] + [self.eos_index]
+
         return input_ids
 
     def prepare_label(self, instance):
         # padding하기 이전, input, label을 정의해주기 -> eos, bos같은것 다 붙인 상태로
-        # logger.info('answers:')
-        # logger.info(instance['answers'])
-        tmp = instance['answers']
-        idx = [len(i) for i in tmp]
-        ans = tmp[idx.index(max(idx))]
-        return self.tokenizer.encode(replace_unicode_punct(ans)) + [self.eos_index]
+        return self.tokenizer.encode(replace_unicode_punct(instance['label'])) + [self.eos_index]
 
     def ready_(self, input_ids, label_ids):
         # 여기에서 구성해주는 output의 key에 따라 캐싱할 파일들의 개수 등이 결정됨 - 웬만하면 거의 안바뀌고 이대로 갈 듯??
@@ -163,7 +171,7 @@ class LFQADataset(Dataset):
         if self.use_cache:
             return self.get_from_cache(idx)
         else:
-            return self.get_from_doc(self.docs[idx])
+            return self.get_from_doc(self.docs.iloc[idx])
 
     def __len__(self):
         return self.len
@@ -180,8 +188,8 @@ class DataModule(pl.LightningDataModule):
         self.valid_file = args.valid_file
         self.num_workers = args.num_workers
 
-        self.train = LFQADataset(self.tokenizer, self.train_file, self.hparam_args)
-        self.valid = LFQADataset(self.tokenizer, self.valid_file, self.hparam_args)
+        self.train = SajuDataset(self.tokenizer, self.train_file, self.hparam_args)
+        self.test = SajuDataset(self.tokenizer, self.valid_file, self.hparam_args)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -194,7 +202,7 @@ class DataModule(pl.LightningDataModule):
         return train
 
     def val_dataloader(self):
-        val = DataLoader(self.valid, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False)
+        val = DataLoader(self.test, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False)
         return val
 
 
